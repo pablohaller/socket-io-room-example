@@ -9,10 +9,6 @@ import Room from "./pages/room/room.tsx";
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <App />,
-  },
-  {
-    path: "/create-rooms",
     element: <CreateRooms />,
   },
   {

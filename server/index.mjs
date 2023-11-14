@@ -9,8 +9,6 @@ const io = new Server(httpServer, {
 });
 
 io.on("connection", (socket) => {
-  console.log("socket connected");
-
   socket.on("join_room", ({ roomId, name }) => {
     console.log(
       name.toLowerCase() === "host" ? "Room created" : "Joined room!",
@@ -23,12 +21,12 @@ io.on("connection", (socket) => {
       .emit("joined_room", { type: "join", id: socket.id, name });
   });
 
-  socket.on("vote", ({ roomId, vote }) => {
-    socket.to(roomId).emit("vote", { vote });
+  socket.on("vote", ({ roomId, vote, activityId }) => {
+    socket.to(roomId).emit("vote", { vote, activityId });
   });
 
-  socket.on("new_activity", ({ roomId, activityId, text }) => {
-    socket.to(roomId).emit("new_activity", { activityId, text });
+  socket.on("set_activity", ({ roomId, activityId }) => {
+    socket.to(roomId).emit("activity_set", activityId);
   });
 });
 

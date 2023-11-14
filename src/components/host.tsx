@@ -3,9 +3,10 @@ import Connected from "./connected";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 interface Props {
   events: any[];
+  activity: string;
 }
 
-const Host = ({ events }: Props) => {
+const Host = ({ events, activity }: Props) => {
   const eventByType = events.reduce(
     () => {
       return {
@@ -13,6 +14,7 @@ const Host = ({ events }: Props) => {
           .filter(({ type }) => type === "join")
           .map(({ name }) => name),
         others: events.filter(({ type }) => type !== "join"),
+        newActivity: events.filter(({ type }) => type === "new_activity"),
       };
     },
     {
@@ -29,9 +31,11 @@ const Host = ({ events }: Props) => {
       </div>
       <div className="w-1/3">
         <h1 className="text-2xl">Log:</h1>
+        <div>{JSON.stringify(eventByType?.others)}</div>
       </div>
       <div className="w-1/3">
-        <h1 className="text-2xl">Question:</h1>
+        <h1 className="text-2xl">Activity:</h1>
+        {activity}
       </div>
     </div>
   );

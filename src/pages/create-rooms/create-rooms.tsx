@@ -10,15 +10,27 @@ import { socket } from "../../socket/client";
 import Status from "../../components/status";
 import Host from "../../components/host";
 
+const ACTIVITIES = [
+  { activityId: 1, name: "Swimming" },
+  { activityId: 2, name: "Hiking" },
+  { activityId: 3, name: "Biking" },
+  { activityId: 4, name: "Running" },
+  { activityId: 5, name: "Yoga" },
+];
+
 const CreateRooms = () => {
   const [url, setUrl] = useState<string>("");
   const [roomId, setRoomId] = useState<string>("");
   const [events, setEvents] = useState<any>([]);
   const [isConnected, setIsConnected] = useState<boolean>(socket?.connected);
+  const [activity, setActivity] = useState<string>("");
+  const [timer, setTimer] = useState<number>(5);
+  const [votingEnded, setVotingEnded] = useState<boolean>(false);
+  const [votingStarted, setVotingStarted] = useState<boolean>(false);
 
   useEffect(() => {
     const onEvents = (value: any) => {
-      console.log("Event");
+      console.log("Event", value);
       setEvents((previous: any[]) => [...previous, value]);
     };
 
@@ -28,7 +40,7 @@ const CreateRooms = () => {
     socket.on("joined_room", onEvents);
 
     return () => {
-      socket.off("connect", () => setIsConnected(true));
+      socket.off("connect", () => setIsConnected(false));
       socket.off("disconnect", () => setIsConnected(false));
       socket.off("vote", onEvents);
       socket.off("joined_room", onEvents);
@@ -54,8 +66,29 @@ const CreateRooms = () => {
     }
   };
 
-  const launchGame = () => {
-    // navigate(`/room/${roomId}?isHost=true`);
+  const launchGameOnInterval = () => {
+    setVotingStarted(true);
+    const activityCopy = [...ACTIVITIES];
+    const launch = setInterval(() => {
+      const activity = activityCopy.pop();
+      socket.emit("set_activity", { roomId, activityId: activity?.activityId });
+      setActivity(activity?.name || "");
+      setTimer(5);
+      if (activityCopy.length === 0) {
+        clearInterval(launch);
+        setActivity("Voting has ended!");
+        setVotingEnded(true);
+        return;
+      }
+    }, 5000);
+
+    const displayTimer = setInterval(() => {
+      setTimer((previous) => previous - 1);
+      if (votingEnded) {
+        clearInterval(displayTimer);
+        return;
+      }
+    }, 1000);
   };
 
   return (
@@ -73,7 +106,7 @@ const CreateRooms = () => {
             </p>
             <div>
               {url ? (
-                <Button onClick={launchGame}>Launch game!</Button>
+                <Button onClick={launchGameOnInterval}>Launch game!</Button>
               ) : (
                 <Button onClick={generateRoomId}>
                   Click here to generate a room
@@ -84,13 +117,19 @@ const CreateRooms = () => {
             {roomId && (
               <Link
                 className="text-slate-200 underline hover:text-white"
-                to={url}>
+                to={url}
+                target="_blank">
                 {url}
               </Link>
             )}
           </div>
         </div>
-        {roomId && <Host events={events} />}
+        <div className="w-full">
+          {!votingEnded && votingStarted && (
+            <div className="text-right">Next votes starting in... {timer}s</div>
+          )}
+          {roomId && <Host events={events} activity={activity} />}
+        </div>
       </div>
     </Layout>
   );

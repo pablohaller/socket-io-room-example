@@ -13,7 +13,8 @@ const Room = () => {
   const [name, setName] = useState<string>("");
   const [ready, setReady] = useState<boolean>(false);
   const [isConnected, setIsConnected] = useState<boolean>(socket.connected);
-  const [voteEvents, setVoteEvents] = useState<any>([]);
+  const [activityId, setActivityId] = useState<any>(-1);
+  const [hasVoted, setHasVoted] = useState<boolean>(false);
 
   useEffect(() => {
     if (!roomId) {
@@ -21,30 +22,22 @@ const Room = () => {
       return;
     }
 
-    // socket.emit("join_room", roomId);
-
-    const onVoteEvents = (value: any) => {
-      setVoteEvents((previous: any[]) => [...previous, value]);
+    const onActivitySet = (value: any) => {
+      console.log(value);
+      setActivityId(value);
     };
 
     socket.on("connect", () => setIsConnected(true));
     socket.on("disconnect", () => setIsConnected(false));
-    socket.on("vote", onVoteEvents);
-    socket.on("join_room", () => null);
+    socket.on("activity_set", onActivitySet);
 
     return () => {
       socket.off("connect", () => setIsConnected(true));
       socket.off("disconnect", () => setIsConnected(false));
-      socket.off("vote", onVoteEvents);
-      socket.off("joined_room", () => null);
+      socket.on("activity_set", onActivitySet);
     };
   }, []);
 
-  if (error) {
-    return <Layout>{error}</Layout>;
-  }
-
-  console.log(voteEvents);
   const submitName = () => {
     if (!name) {
       alert("Please enter a name");
@@ -58,13 +51,38 @@ const Room = () => {
     setReady(true);
   };
 
+  const vote = (vote: number) => {
+    socket.emit("vote", { roomId, activityId, vote });
+    setHasVoted(false);
+  };
+
+  useEffect(() => {
+    if (activityId !== -1) {
+      setHasVoted(true);
+    }
+  }, [activityId]);
+
+  if (error) {
+    return <Layout>{error}</Layout>;
+  }
+
+  console.log("hasVoted", hasVoted, hasVoted ? "yes" : "no");
   return (
     <Layout>
       <Title>Room: {roomId}</Title>
       <Status isConnected={isConnected} />
+      <p>{JSON.stringify(activityId)}</p>
       {ready ? (
         <div>
-          <div>Votes!</div>
+          {!hasVoted ? (
+            <div>Nothing to vote</div>
+          ) : (
+            <div>
+              <Button onClick={() => vote(1)}>😄</Button>
+              <Button onClick={() => vote(0)}>😐</Button>
+              <Button onClick={() => vote(-1)}>😞</Button>
+            </div>
+          )}
         </div>
       ) : (
         <>
